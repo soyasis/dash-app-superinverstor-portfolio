@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
-from shiny import *
-from shinywidgets import output_widget, register_widget, reactive_read
+import matplotlib.pyplot as plt
+from shiny import App, reactive, render, ui
 from functions import *
-import plotly.express as px
 
 
 # get investor df
@@ -18,7 +17,7 @@ investors_list = investors_array.tolist()
 app_ui = ui.page_fluid(
     ui.h2("Superinvestors Portfolio"),
     ui.input_select("name", "Investor", investors_list),
-    output_widget("fig"),
+    ui.output_plot("plot"),
     ui.output_text("name")
 )
 
@@ -26,8 +25,6 @@ app_ui = ui.page_fluid(
 def server(input, output, session):
 
     # initiliaze 
-    search_result_url, search_result_investor = search_investor('AKO Capital', investor_df)
-    portfolio_df = get_portfolio_data(search_result_url, search_result_investor)
     
     
     # Pie Chart
@@ -38,8 +35,17 @@ def server(input, output, session):
     @reactive.Effect
     def _():
         fig.name = input.name() """
-        
+    @output
+    @render.plot    
+    def plot():
+        search_result_url, search_result_investor = search_investor(input.name(), investor_df)
+        portfolio_df = get_portfolio_data(search_result_url, search_result_investor)
+        y = portfolio_df['% ofPortfolio']
+        labels = portfolio_df['Stock']
+        fig = plt.pie(y, labels = labels, startangle = 90)
 
+        return fig
+    
     @output
     @render.text
     def name():
